@@ -4,17 +4,6 @@ use std::io::Error;
 use std::io::ErrorKind;
 fn main() {
     println!("WAL application for learning basic rust");
-    let mut file = OpenOptions::new().read(true).write(true).create(true).open("logs.txt").expect("Couldn't open logs.txt");
-    let log1 = Log{
-        key : String::from("a"),
-        value : String::from("1"),
-        checksum : 1
-    };
-    let bytes_written  = log1.write_data(&mut file).expect("issue in writing data to disk");
-    println!("bytes written: {}", bytes_written);
-    file.seek(SeekFrom::Start(0)).expect("unable to seek to start");
-    let read_log = Log::read_data(&mut file).expect("issue in reading data from disk");
-    println!("read data: {:?}", read_log);
 }
 
 #[derive(Debug)]
@@ -46,7 +35,7 @@ impl Log {
         }
         reader.read_line(&mut value)?;
         reader.read_line(&mut checksum_str)?;
-        let checksum = checksum_str.trim().parse().unwrap();
+        let checksum = checksum_str.trim().parse().expect("invalid checksum");
         Ok(Log{
             key,
             value,
@@ -55,3 +44,29 @@ impl Log {
     }
 }
 
+mod tests {
+    use super::*;
+    #[test]
+    fn test_simple_write() {
+        //tests a basic write op.
+        let path = "logs.txt";
+        let mut file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .open(path)
+            .expect("Couldn't open logs.txt");
+        let log = Log {
+            key : String::from("k1"),
+            value : String::from("v1"),
+            checksum : 1
+        };
+        let bytes_written = log.write_data(&mut file).expect("write failed");
+        assert!(bytes_written > 0);
+    }
+
+    #[test]
+    fn test_simple_read() {
+
+    }
+}
