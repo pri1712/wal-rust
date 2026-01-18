@@ -26,6 +26,13 @@ impl Log {
         file.write_all(format!("{}\n", checksum).as_bytes())?;
         Ok(data_bytes.len() + checksum.to_string().len() + 1)
     }
+    fn write_multi_data(logs: &[Log],file: &mut File) -> Result<usize, std::io::Error> {
+        let mut bytes_written = 0;
+        for log in logs {
+            bytes_written= bytes_written+ log.write_data(file)?;
+        }
+        Ok(bytes_written)
+    }
 
     fn read_data(file: &mut File) -> Result<Log, Error> {
         let mut reader = BufReader::new(file);
@@ -47,8 +54,6 @@ impl Log {
         let mut hasher = Hasher::new();
         hasher.update(data_bytes);
         let checksum = hasher.finalize();
-        println!("Checksum is {}",checksum);
-        println!("Stored Checksum is {}",checksum_int);
         if checksum_int != checksum {
             return Err(Error::new(
                 ErrorKind::InvalidData,
@@ -65,7 +70,7 @@ impl Log {
 mod tests {
     use super::*;
     #[test]
-    fn test_simple_write() {
+    fn test_single_write() {
         //tests a basic write op.
         let path = "logs.txt";
         let mut file = OpenOptions::new()
@@ -83,7 +88,7 @@ mod tests {
     }
 
     #[test]
-    fn test_simple_read() {
+    fn test_single_read() {
         //write something and then try to read it back.
         let path = "logs.txt";
         let mut file = OpenOptions::new()
@@ -103,5 +108,34 @@ mod tests {
         assert_eq!(log.value, "v1");
     }
 
+    #[test]
+    fn test_multi_write() {
+        let path = "logs_multi.txt";
+
+        let mut file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(path)
+            .expect("Couldn't open logs_multi.txt");
+
+        let logs = vec![
+            Log { key: "k1".to_string(), value: "v1".to_string() },
+            Log { key: "k2".to_string(), value: "v2".to_string() },
+            Log { key: "k3".to_string(), value: "v3".to_string() },
+            Log { key: "k4".to_string(), value: "v4".to_string() },
+            Log { key: "k5".to_string(), value: "v5".to_string() },
+        ];
+
+        let bytes_written = Log::write_multi_data(&logs, &mut file)
+            .expect("multi-write failed");
+
+        assert!(bytes_written > 0);
+    }
+    #[test]
+    fn test_multi_read() {
+
+    }
 
 }
