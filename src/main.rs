@@ -1,5 +1,5 @@
 use std::fs::{File, OpenOptions};
-use std::io::{BufRead, BufReader, Read, Seek, SeekFrom, Write};
+use std::io::{BufRead, BufReader, Seek, SeekFrom, Write};
 use std::io::Error;
 use std::io::ErrorKind;
 fn main() {
@@ -67,6 +67,24 @@ mod tests {
 
     #[test]
     fn test_simple_read() {
-
+        //write something and then try to read it back.
+        let path = "logs.txt";
+        let mut file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .open(path)
+            .expect("Couldn't open logs.txt");
+        let log = Log {
+            key : String::from("k1"),
+            value : String::from("v1"),
+            checksum : 1
+        };
+        log.write_data(&mut file).expect("write failed");
+        file.seek(SeekFrom::Start(0)).expect("seek failed");
+        Log::read_data(&mut file).expect("read failed");
+        assert_eq!(log.key, "k1");
+        assert_eq!(log.value, "v1");
+        assert_eq!(log.checksum, 1);
     }
 }
