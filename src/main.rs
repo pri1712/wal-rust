@@ -65,6 +65,14 @@ impl Log {
             value
         })
     }
+
+    fn read_multi_data(file: &mut File) -> Result<Vec<Log>, Error> {
+        let mut logs = Vec::new();
+        while let Ok(log) = Log::read_data(file) {
+            logs.push(log);
+        }
+        Ok(logs)
+    }
 }
 
 mod tests {
@@ -135,7 +143,30 @@ mod tests {
     }
     #[test]
     fn test_multi_read() {
+        let path = "logs_multi.txt";
 
+        let mut file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(path)
+            .expect("Couldn't open logs_multi.txt");
+
+        let logs = vec![
+            Log { key: "k1".to_string(), value: "v1".to_string() },
+            Log { key: "k2".to_string(), value: "v2".to_string() },
+            Log { key: "k3".to_string(), value: "v3".to_string() },
+            Log { key: "k4".to_string(), value: "v4".to_string() },
+            Log { key: "k5".to_string(), value: "v5".to_string() },
+        ];
+
+        let bytes_written = Log::write_multi_data(&logs, &mut file)
+            .expect("multi-write failed");
+
+        file.seek(SeekFrom::Start(0)).expect("seek failed");
+        Log::read_multi_data(&mut file).expect("read failed");
+        assert_eq!(logs.len(), 5);
     }
 
 }
